@@ -7,6 +7,7 @@
 #include <utility>
 
 #include <TopoDS_Shape.hxx>
+#include <TopoDS_Face.hxx>
 
 class Node;
 class Importer;
@@ -32,6 +33,8 @@ public:
 
     virtual bool HasNormals () const = 0;
     virtual bool GetColor (Color& color) const = 0;
+    // CAD Viewer: the B-rep face this mesh face was built from (null if unknown).
+    virtual TopoDS_Face GetTopoFace () const { return TopoDS_Face (); }
 
     virtual void EnumerateVertices (const std::function<void (double, double, double)>& onVertex) const = 0;
     virtual void EnumerateNormals (const std::function<void (double, double, double)>& onNormal) const = 0;

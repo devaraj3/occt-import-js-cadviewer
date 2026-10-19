@@ -16,6 +16,7 @@ public:
     HierarchyWriter (emscripten::val& meshesArr, std::vector<NodeRecord>* records = nullptr) :
         mMeshesArr (meshesArr),
         mMeshCount (0),
+        mFaceCount (0),
         mRecords (records)
     {
     }
@@ -44,10 +45,38 @@ public:
     }
 
 private:
+    // Face numbering of one topology unit: topology.faces ids are "f_<base + i - 1>" for map index i.
+    struct UnitFaces
+    {
+        TopTools_IndexedMapOfShape faceMap;
+        int base;
+    };
+
     void WriteMeshes (const NodePtr& node, emscripten::val& nodeMeshesArr)
     {
         if (!node->IsMeshNode ()) {
             return;
+        }
+
+        // The unit shapes and their face ids are fixed before any mesh is written, in the same order
+        // BuildTopology numbers them (units of nodes that produce meshes, node order, global counter).
+        std::vector<NodeRecord> nodeRecords;
+        std::vector<UnitFaces> units;
+        if (mRecords != nullptr) {
+            bool hasMeshes = false;
+            node->EnumerateMeshes ([&](const Mesh&) { hasMeshes = true; });
+            if (hasMeshes) {
+                for (const auto& unit : node->GetTopoUnits ()) {
+                    NodeRecord record;
+                    record.partId = unit.first;
+                    record.shape = unit.second;
+                    nodeRecords.push_back (record);
+                    units.emplace_back ();
+                    units.back ().base = mFaceCount;
+                    MapUnitFaces (record.shape, units.back ().faceMap);
+                    mFaceCount += units.back ().faceMap.Extent ();
+                }
+            }
         }
 
         int nodeMeshCount = 0;
@@ -68,6 +97,14 @@ private:
             emscripten::val normalArr (emscripten::val::array ());
             emscripten::val indexArr (emscripten::val::array ());
             emscripten::val brepFaceArr (emscripten::val::array ());
+
+            // a single unit (XCAF node) serves all of the node's meshes; otherwise one unit per mesh
+            const UnitFaces* meshUnit = nullptr;
+            if (units.size () == 1) {
+                meshUnit = &units[0];
+            } else if (nodeMeshCount < (int) units.size ()) {
+                meshUnit = &units[nodeMeshCount];
+            }
 
             mesh.EnumerateFaces ([&](const Face& face) {
                 int triangleOffset = triangleCount;
@@ -102,6 +139,12 @@ private:
                     brepFaceObj.set ("color", colorArr);
                 } else {
                     brepFaceObj.set ("color", emscripten::val::null ());
+                }
+                if (meshUnit != nullptr) {
+                    int faceIndex = meshUnit->faceMap.FindIndex (face.GetTopoFace ());
+                    if (faceIndex > 0) {
+                        brepFaceObj.set ("faceId", "f_" + std::to_string (meshUnit->base + faceIndex - 1));
+                    }
                 }
                 brepFaceArr.set (brepFaceCount, brepFaceObj);
                 brepFaceCount += 1;
@@ -144,17 +187,13 @@ private:
 
         // exact topology is extracted once per node that produced meshes
         if (mRecords != nullptr && nodeMeshCount > 0) {
-            for (const auto& unit : node->GetTopoUnits ()) {
-                NodeRecord record;
-                record.partId = unit.first;
-                record.shape = unit.second;
-                mRecords->push_back (record);
-            }
+            mRecords->insert (mRecords->end (), nodeRecords.begin (), nodeRecords.end ());
         }
     }
 
     emscripten::val& mMeshesArr;
     int mMeshCount;
+    int mFaceCount;
     std::vector<NodeRecord>* mRecords;
 };
 

@@ -14,11 +14,11 @@ This repository is the complete corresponding source of the built module (LGPL-2
 
 | file | sha256 | bytes |
 |---|---|---:|
-| `occt-import-js.wasm` | `6c0b52223c47178289eb40c53a3e6b639076b032e4a12d83bd837a748b58d82d` | 7,776,237 |
+| `occt-import-js.wasm` | `d87fab16f9815471579eb531101f7bf6f8752641234ef0057b22b43f48d40aab` | 7,779,074 |
 | `occt-import-js.js` | `7ccb3dca2d792baa31dc2c316622cf42e4ed581dcee3ec154dbc9cdf2d31c95c` | 97,877 |
 
 Produced by `scripts/build.sh` from this commit. The build is bit-for-bit reproducible (verified on
-arm64 with three independent cold builds; other architectures may give a different, equally valid hash).
+arm64 with two independent cold builds; other architectures may give a different, equally valid hash).
 
 ## API
 
@@ -29,7 +29,8 @@ All functions are Embind exports of the module created by `occtimportjs()` (`MOD
   `brep:solid|shell|faces:N`).
 * `TessellateWithTopology(bytes, { ext | inputExt, ...params | mesh: params })` -
   `{ success, root, meshes, topology: { vertices, edges, faces } }` (same `root`/`meshes` as the
-  readers, plus exact B-rep topology per node), or `{ success: false, error }`.
+  readers, plus exact B-rep topology per node; since v1.0.1 every `brep_faces` entry also carries
+  `faceId`, the `topology.faces[].id` of the face its triangles belong to - pair by id, not by position), or `{ success: false, error }`.
 * `ExportPart(bytes, { inputExt, partId, format })` - `{ success, format, bytes: Uint8Array }`
   (`format`: `step`/`stp`, `iges`/`igs`, `brep`), or `{ success: false, error }`.
 
@@ -75,9 +76,9 @@ by ~8 KB. `setarch -R` needs the `personality` syscall, which Docker's default s
 blocks during `docker build`, so the script uses `docker run --security-opt seccomp=unconfined`
 (only the pinned sources fetched by the Dockerfile are built in that container).
 
-Verified: three independent cold builds (two concurrent) produced identical
-`occt-import-js.wasm` (sha256 `6c0b52223c47178289eb40c53a3e6b639076b032e4a12d83bd837a748b58d82d`,
-7,776,237 bytes) and identical `occt-import-js.js`. Verified on arm64 only; x86_64 hosts are
+Verified: for v1.0.1 two independent cold builds (run concurrently) produced identical
+`occt-import-js.wasm` (sha256 `d87fab16f9815471579eb531101f7bf6f8752641234ef0057b22b43f48d40aab`,
+7,779,074 bytes) and identical `occt-import-js.js`. Verified on arm64 only; x86_64 hosts are
 untested and may produce a different (equally valid) hash.
 
 `docker build --target artifacts --output type=local,dest=dist .` is a quick path that

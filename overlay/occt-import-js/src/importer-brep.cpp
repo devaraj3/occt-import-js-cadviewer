@@ -23,6 +23,21 @@ static TopoDS_Shape LooseFacesCompound (const TopoDS_Shape& shape)
     return any ? TopoDS_Shape (compound) : TopoDS_Shape ();
 }
 
+class BrepFace : public OcctFace
+{
+public:
+    BrepFace (const TopoDS_Face& face) :
+        OcctFace (face)
+    {
+
+    }
+
+    virtual TopoDS_Face GetTopoFace () const override
+    {
+        return face;
+    }
+};
+
 class BrepShapeMesh : public Mesh
 {
 public:
@@ -53,7 +68,7 @@ public:
     {
         for (TopExp_Explorer ex (shape, TopAbs_FACE); ex.More (); ex.Next ()) {
             const TopoDS_Face& face = TopoDS::Face (ex.Current ());
-            OcctFace outputFace (face);
+            BrepFace outputFace (face);
             onFace (outputFace);
         }
     }
@@ -99,7 +114,7 @@ public:
     {
         for (TopExp_Explorer ex (shape, TopAbs_FACE, TopAbs_SHELL); ex.More (); ex.Next ()) {
             const TopoDS_Face& face = TopoDS::Face (ex.Current ());
-            OcctFace outputFace (face);
+            BrepFace outputFace (face);
             onFace (outputFace);
         }
     }

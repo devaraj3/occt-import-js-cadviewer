@@ -160,6 +160,13 @@ val FaceEntry (const TopoDS_Face& face, const std::string& id, const std::string
 
 } // namespace
 
+void MapUnitFaces (const TopoDS_Shape& shape, TopTools_IndexedMapOfShape& faceMap)
+{
+    if (!shape.IsNull ()) {
+        TopExp::MapShapes (shape, TopAbs_FACE, faceMap);
+    }
+}
+
 val BuildTopology (const std::vector<NodeRecord>& records)
 {
     val vertices (val::array ());
@@ -178,7 +185,7 @@ val BuildTopology (const std::vector<NodeRecord>& records)
 
         // faces in traversal order of the node shape
         TopTools_IndexedMapOfShape faceMap;
-        TopExp::MapShapes (shape, TopAbs_FACE, faceMap);
+        MapUnitFaces (shape, faceMap);
         const int groupFaceBase = faceCount;
         for (int i = 1; i <= faceMap.Extent (); i++) {
             faces.set (faceCount, FaceEntry (TopoDS::Face (faceMap (i)), Id ("f_", faceCount), partId));

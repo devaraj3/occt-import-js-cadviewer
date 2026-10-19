@@ -112,6 +112,11 @@ public:
         return GetShapeColor ((const TopoDS_Shape&) face, shapeTool, colorTool, color);
     }
 
+    virtual TopoDS_Face GetTopoFace () const override
+    {
+        return face;
+    }
+
 private:
     const Handle (XCAFDoc_ShapeTool)& shapeTool;
     const Handle (XCAFDoc_ColorTool)& colorTool;
