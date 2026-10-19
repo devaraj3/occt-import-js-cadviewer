@@ -1,0 +1,5 @@
+oracle/
+dist/
+work/
+node_modules/
+.DS_Store
